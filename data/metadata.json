@@ -1,0 +1,35 @@
+[
+  {
+    "id": CS001,
+    "name": "张华",
+    "resources": {
+      "audio": "audio_G弦上的咏叹调.mp3",      
+      "scoreImage": "scores/score_G弦上的咏叹调.pdf"  
+    }
+  },
+  {
+    "id": CS002,
+    "name": "李明",
+    "resources": {
+      "audio": "audio_奇异恩典.mp3",
+      "scoreImage": "scores/score_奇异恩典.pdf"  
+    }
+  },
+  {
+    "id": CS003,
+    "name": "王芳",
+    "resources": {
+      "audio": "audio_溜冰圆舞曲.mp3",
+      "scoreImage": "scores/score_溜冰圆舞曲.pdf"
+    }
+  },
+  {
+    "id": 1004,
+    "name": "赵强",
+    "resources": {
+      "audio": "audio_D.mp3",
+      "scoreImage": "scores/score_D.pdf"
+    }
+  }
+  // ❗ 请根据您的实际参赛者数量，继续添加对象，并确保使用逗号分隔前一个对象和当前对象。
+]
