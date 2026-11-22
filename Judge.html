@@ -2,19 +2,23 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <!-- 关键：设置 viewport 确保移动端兼容性 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>评委评分系统 - 25分制加分法 (本地缓存版) V7.2.0</title>
+    <title>评委评分系统 - V7.2.0</title>
+    
     <style>
-        /* --- 样式部分 (原代码保留，确保界面一致性) --- */
+        /* ============================================================== */
+        /* 样式部分 (保留了您原有的优秀样式) */
+        /* ============================================================== */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f5f5f5; color: #333; padding: 10px; }
         h2 { text-align: center; margin: 10px 0; font-size: 1.2rem; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 48px; color: rgba(0,0,0,0.05); z-index: 9999; pointer-events: none; white-space: nowrap; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         .card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; overflow: hidden; transition: all 0.3s; border: 2px solid transparent; }
         .card.completed { background: #f0f0f0; border-color: #d9d9d9; opacity: 0.8; }
+        
         .card-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .card-id-info {display: flex; flex-direction: row; align-items: baseline; gap: 8px;} 
+        .card-id-info { display: flex; flex-direction: column; gap: 3px; }
         .card-id { font-weight: bold; font-size: 1.1rem; color: #1890ff; }
         .card-name { font-size: 0.95rem; color: #555; font-weight: 500; }
         .card-instrument { display: none; } 
@@ -89,17 +93,18 @@
             color: #1890ff; border-radius: 20px; font-size: 0.85rem;
             cursor: pointer; transition: all 0.3s;
         }
-        .hidden { display: none; }
-
+        /* --- Modal Styles --- */
         .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.95); padding: 10px; }
         .modal-content { margin: 0 auto; display: block; width: 100%; max-height: 90vh; background-color: #000; border-radius: 8px; }
         .card-header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .modal-close-btn { color: #aaa; float: right; font-size: 30px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; z-index: 10001; }
     </style>
 </head>
-<body >
-    <div class="watermark" id="watermark">评委测试版</div>
+<body>
+    <!-- ⚠️ 注意：在GitHub Pages上，watermark 不会像本地那样完美居中，但我们保留它。 -->
+    <div class="watermark" id="watermark">评委测试版 V7.2.0</div>
     
+    <!-- 评分弹窗 -->
     <div id="scoreModal" class="modal">
         <span class="modal-close-btn" onclick="closeScoreModal()">&times;</span>
         <div id="modalContentWrapper" class="modal-content"></div>
@@ -107,10 +112,10 @@
 
     <div class="container" id="app">
         <h2 id="mainTitle">评委评分系统 V7.2.0</h2>
-        
         <p id="algorithmDesc" style="text-align: center; margin-bottom: 5px; color: #555; font-size: 0.95rem;">每项指标满分 25 分，四项总和即为最终总分 (满分 100 分)。</p>
         <p style="text-align: center; margin-bottom: 15px; color: #d4380d; font-weight: bold; font-size: 0.9rem;">晋级分数线：专业组80分(含)、业余组70分(含)以上</p>
         
+        <!-- 此处将动态显示活动名称 -->
         <div id="activityInfoBox">正在加载本次评分信息...</div>
 
         <button class="help-btn" onclick="showHelp()">💡 点击查看使用说明</button>
@@ -122,77 +127,84 @@
 
     <script>
         // ========================================================
-        // === 🚀 V7.2.0 核心：JSON数据驱动 + 路径适配 ===
+        // === 🚀 V7.2.0 核心：路径适配 + 部署优化 ===
         // ========================================================
         const CONFIG = {
             mode: 'http', 
-            // ❗❗ 关键适配：所有资源和数据都位于 data/ 文件夹下 ❗❗
+            // ❗❗ 核心适配：基础资源URL现在指向 data/ 文件夹 ❗❗
             baseResourceUrl: './data/', 
             
             contestantsData: [], 
             completedStatus: {}, 
-            groupSize: 4 // 假设每组包含4位选手，请根据实际情况设置
+            groupSize: 4 // 假设每组包含4位选手
         };
         const LOCAL_STORAGE_KEY = 'judgeScoresData_V720'; 
 
         window.onload = function() {
-            document.getElementById('watermark').innerText = '评委测试版 V7.2.0';
+            // 启动所有流程
+            loadMetadata();
             loadContestantData();
         };
 
-        // --- 数据加载函数 (核心) ---
-        async function loadContestantData() {
+        // --- 1. 加载元数据 (Metadata) ---
+        async function loadMetadata() {
             try {
-                // 1. 加载元数据 (metadata.json 假设在根目录)
-                const metaRes = await fetch('./data/metadata.json');
-                if (!metaRes.ok) throw new Error(`Metadata load failed. Status: ${metaRes.status}`);
-                const metadata = await metaRes.json();
+                // ❗ 路径修正：metadata.json 应该和 judge.html 在同一级目录
+                const response = await fetch('./metadata.json');
+                if (!response.ok) throw new Error(`Metadata load failed. Status: ${response.status}`);
+                const data = await response.json();
                 
-                // 2. 更新配置
-                CONFIG.currentActivity = metadata.activity;
-                document.getElementById('mainTitle').innerText = `评委评分系统 ${metadata.version}`;
-
-                // 3. 加载选手数据 (路径已适配到 data/ 文件夹)
-                const dataRes = await fetch('./data/contestants.json');
-                if (!dataRes.ok) throw new Error(`Contestant data load failed. Status: ${dataRes.status}`);
-                CONFIG.contestantsData = await dataRes.json();
-                
-                // 初始化状态
-                CONFIG.contestantsData.forEach(c => CONFIG.completedStatus[c.id] = false);
-                
-                // 4. 渲染界面
-                renderGroups();
-                
-                // 5. 恢复本地缓存
-                loadCachedData();
+                // ❗ 动态更新显示文字
+                document.getElementById('activityInfoBox').innerText = 
+                    `本次评分：${data.activityName || '未命名活动'} (${data.version || 'V未知'})`;
 
             } catch (error) {
-                console.error("数据加载失败:", error);
-                document.getElementById('activityInfoBox').innerHTML = 
-                    `<strong style="color: red;">❌ 致命错误：无法加载配置文件或选手数据 (${error.message})。请检查文件结构和文件内容！</strong>`;
-                document.getElementById('group-container').innerHTML = '';
+                console.error("加载 metadata.json 失败:", error);
+                // 失败时保留默认提示
+                document.getElementById('activityInfoBox').innerHTML = `<strong style="color: red;">❌ 致命错误：无法加载元数据。请确保 metadata.json 在根目录且格式正确！</strong>`;
             }
         }
 
-        // --- UI 渲染函数 ---
+        // --- 2. 加载选手数据 (Contestants Data) ---
+        async function loadContestantData() {
+            try {
+                // ❗ 路径已适配到 ./data/ 下
+                const response = await fetch('./data/contestants.json');
+                if (!response.ok) throw new Error(`Contestant data load failed. Status: ${response.status}`);
+                CONFIG.contestantsData = await response.json();
+                
+                CONFIG.contestantsData.forEach(c => CONFIG.completedStatus[c.id] = false);
+                console.log(`✅ 成功加载 ${CONFIG.contestantsData.length} 位选手数据。`);
+                renderGroups(); // 数据加载成功后，渲染界面
+                
+                loadCachedData(); // 恢复本地缓存
+            } catch (error) {
+                console.error("加载 contestants.json 失败:", error);
+                document.getElementById('group-container').innerHTML = 
+                    `<h2 style="color:red;">❌ 致命错误：无法加载选手数据。请检查 data/contestants.json 是否存在且格式正确！</h2>`;
+            }
+        }
 
+        // --- 3. 渲染所有选手卡片 ---
         function renderGroups() {
             const container = document.getElementById('group-container');
             container.innerHTML = ''; 
+
+            if (CONFIG.contestantsData.length === 0) {
+                container.innerHTML = '<p>未找到任何选手数据。</p>';
+                return;
+            }
+
             let html = '';
-            
             let groupIndex = 0;
             
             CONFIG.contestantsData.forEach((item, i) => {
                 
-                // ❗ 资源路径构建：baseResourceUrl = './data/'，资源名是文件名，所以组合起来是正确的
+                // ❗ 资源路径构建：baseResourceUrl = './data/'，资源名是文件名
                 const audioSrc = CONFIG.baseResourceUrl + item.resources.audio; 
                 const scoreResourcePath = CONFIG.baseResourceUrl + item.resources.scoreImage; 
 
                 const completedClass = CONFIG.completedStatus[item.id] ? 'completed' : '';
-
-                // 安全处理路径，防止JS解析问题
-                const safeImagePath = scoreResourcePath.replace(/'/g, "\\'"); 
 
                 const cardHtml = `
                     <div class="card ${completedClass}" id="card-${i}">
@@ -202,7 +214,7 @@
                                 <span class="card-name">${item.name}</span>
                             </div>
                             <div>
-                                <button class="view-image-btn" onclick="openScoreModal('${item.id}', '${safeImagePath}')" style="padding: 5px 10px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">▶ 听音看谱</button>
+                                <button class="view-image-btn" onclick="openScoreModal('${item.id}', '${scoreResourcePath.replace(/'/g, "\\'")}')" style="padding: 5px 10px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">▶ 听音看谱</button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -216,13 +228,13 @@
                             <div class="total-score-row" id="total-score-row-${i}">
                                 <label>总分 (满分100):</label>
                                 <span id="totalScoreVal${i}">50.0</span>
-                            </div>
+                            </div >
                             <button class="finish-btn" id="finish-btn-${i}" onclick="confirmScore(${i})">完成评分</button>
                         </div>
                     </div>
                 `;
                 
-                // 依据 CONFIG.groupSize 进行分组渲染
+                // 分组渲染逻辑 (保留)
                 if ((i + 1) % CONFIG.groupSize === 0 || i === CONFIG.contestantsData.length - 1) {
                     html += `<div id="group-${groupIndex}">${cardHtml}</div>`;
                     if ((i + 1) !== CONFIG.contestantsData.length) {
@@ -239,7 +251,9 @@
             checkFinalSubmitButtonStatus();
         }
 
+        // --- 评分与状态管理 (与原代码保持一致) ---
         function generateScoreInputs(index) {
+            // ... (此处代码不变)
             let html = `<div class="score-row"><label>节奏:</label><input type="range" id="score1${index}" min="1" max="25" step="0.5" value="12.5" oninput="updateScore(${index}, 1, this.value)"> <span id="scoreVal1${index}">12.5</span></div>`;
             html += `<div class="score-row"><label>风格:</label><input type="range" id="score2${index}" min="1" max="25" step="0.5" value="12.5" oninput="updateScore(${index}, 2, this.value)"> <span id="scoreVal2${index}">12.5</span></div>`;
             html += `<div class="score-row"><label>技巧:</label><input type="range" id="score3${index}" min="1" max="25" step="0.5" value="12.5" oninput="updateScore(${index}, 3, this.value)"> <span id="scoreVal3${index}">12.5</span></div>`;
@@ -247,7 +261,6 @@
             return html;
         }
 
-        // --- 评分与状态管理 ---
         function updateScore(index, metric, value) {
             const scoreValue = parseFloat(value);
             const spanId = `scoreVal${metric}${index}`;
@@ -281,12 +294,10 @@
             const extension = resourcePath.split('.').pop().toLowerCase();
             
             if (extension === 'pdf') {
-                // ✅ PDF 预览逻辑：利用浏览器原生PDF阅读器
                 window.open(resourcePath, '_blank');
                 alert("正在跳转至PDF阅读器打开乐谱。请检查新标签页。");
                 modal.style.display = "none"; 
             } else if (extension === 'jpg' || extension === 'jpeg') {
-                // ✅ 图片显示逻辑
                 const img = document.createElement('img');
                 img.src = resourcePath;
                 img.style.maxWidth = '100%';
@@ -358,12 +369,10 @@
             const data = { judgeName: '评委测试版', timestamp: new Date().toISOString(), scores: [] };
             CONFIG.contestantsData.forEach((item, index) => {
                 let rawScores = [];
-                // 无论是否完成，我们都读取当前的数值进行提交
                 for (let i = 1; i <= 4; i++) {
                     const scoreElement = document.getElementById(`score${i}${index}`);
                     rawScores.push(scoreElement ? parseFloat(scoreElement.value).toFixed(1) : '0.0');
                 }
-                
                 const sum25 = rawScores.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
                 
                 data.scores.push({
@@ -385,7 +394,7 @@
 
         // --- 辅助函数 ---
         function saveAllScoresLocally() {
-            // ... (与原版相同，用于实时保存进度)
+            // ... (此处代码与原版保持一致，用于实时保存进度)
             const stateToSave = {
                 scores: CONFIG.contestantsData.map((item, index) => {
                     let rawScores = [];
@@ -406,7 +415,7 @@
         }
         
         function loadCachedData() {
-            // ... (与原版相同，用于恢复进度)
+            // ... (此处代码与原版保持一致，用于恢复进度)
             const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cachedData) {
                 const data = JSON.parse(cachedData);
@@ -484,9 +493,9 @@
             finalBtn.classList.toggle('hidden', !allGroupsComplete);
             finalBtn.disabled = !allGroupsComplete;
         }
-        
+
         function showHelp() {
-            const helpMsg = "1. 评分流程\n- 点击音频播放键（▶），再点击“▶ 听音看谱”，即可同时播放音频和显示乐谱。\n- 先比较本组所有选手的表现，综合平衡评分，确保评分公平、客观。\n- 确认每位选手的分数无误后，逐一点击其“完成评分”按钮，锁定评分。\n- 全组所有选手评分锁定后，才能点击底部的“确认本组并继续”。\n\n2. 最终提交\n- 所有分组确认完成后，“提交所有评分”按钮将自动激活。\n- 点击该按钮，完成全部评分的最终提交和保存。\n\n3. 评分保存与恢复\n- 所有评分数据都会自动保存在当前设备的浏览器中。\n- 即使关闭浏览器或断开网络，下次打开本页面时，也会自动恢复上次的评分进度。";
+            const helpMsg = "1. 评分流程\n- 点击音频播放键（▶），再点击“▶ 听音看谱”，即可同时播放音频和显示乐谱。\n- 先比较本组所有选手的表现，综合平衡评分，确保评分公平、客观。\n- 确认每位选手的分数无误后，逐一点击其“完成评分”按钮，锁定评分。\n- 全组所有选手评分锁定后，才能点击底部的“确认本组并继续”。\n\n2. 最终提交\n- 所有分组确认完成后，“提交所有评分”按钮将自动激活。\n- 点击该按钮，完成全部评分的最终提交和保存。";
             alert(helpMsg);
         }
     </script>
