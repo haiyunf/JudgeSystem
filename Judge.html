@@ -235,21 +235,18 @@
                 `;
                 
                 // 分组渲染逻辑 (保留)
-                if ((i + 1) % CONFIG.groupSize === 0 || i === CONFIG.contestantsData.length - 1) {
+               if ((i + 1) % CONFIG.groupSize === 0 || i === CONFIG.contestantsData.length - 1) {
                     html += `<div id="group-${groupIndex}">${cardHtml}</div>`;
-                    if ((i + 1) !== CONFIG.contestantsData.length) {
-                        html += `<button class="group-submit-btn" onclick="submitGroup(${groupIndex})">确认本组并继续 (第 ${groupIndex + 1} 组)</button>`;
-                    }
+
+                   // 每组都显示确认按钮，包括最后一组
+                    html += `<button class="group-submit-btn" onclick="submitGroup(${groupIndex})">
+                    确认本组（第 ${groupIndex + 1} 组）
+                    </button>`;
+
                     groupIndex++;
-                } else {
-                    html += cardHtml;
-                }
-            });
-            
-            container.innerHTML = html;
-            updateAllCardStates(); 
-            checkFinalSubmitButtonStatus();
-        }
+} else {
+    html += cardHtml;
+}
 
         // --- 评分与状态管理 (与原代码保持一致) ---
         function generateScoreInputs(index) {
