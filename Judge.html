@@ -489,6 +489,8 @@
             const finalBtn = document.getElementById('submitBtn');
             finalBtn.classList.toggle('hidden', !allGroupsComplete);
             finalBtn.disabled = !allGroupsComplete;
+            finalBtn.disabled = !allGroupsComplete;
+            return allGroupsComplete;
         }
 
         function showHelp() {
