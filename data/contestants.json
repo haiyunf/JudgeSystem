@@ -1,7 +1,7 @@
 [
   {
     "id": "CS001",
-    "name": "张华 (选手A)",
+    "name": "G弦上的咏叹调",
     "resources": {
       "audio": "audio/CS001_G弦上的咏叹调.mp3",
       "scoreImage": "score/CS001_G弦上的咏叹调.pdf"
@@ -9,7 +9,7 @@
   },
   {
     "id": "CS002",
-    "name": "李明 (选手B)",
+    "name": "奇异恩典",
     "resources": {
       "audio": "audio/CS002_奇异恩典.mp3",
       "scoreImage": "score/CS002_奇异恩典.pdf"
@@ -17,7 +17,7 @@
   },
   {
     "id": "CS003",
-    "name": "王芳 (选手C)",
+    "name": "溜冰圆舞曲",
     "resources": {
       "audio": "audio/CS003_溜冰圆舞曲.mp3",
       "scoreImage": "score/CS003_溜冰圆舞曲.pdf"
