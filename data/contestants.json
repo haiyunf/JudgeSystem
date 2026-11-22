@@ -1,35 +1,26 @@
 [
   {
-    "id": CS001,
+    "id": "CS001",
     "name": "张华 (选手A)",
     "resources": {
-      "audio": "G弦上的咏叹调.mp3",      
-      "scoreImage": "scores/G弦上的咏叹调.jpg"  
+      "audio": "audio/CS001_G弦上的咏叹调.mp3",
+      "scoreImage": "score/CS001_G弦上的咏叹调.pdf"
     }
   },
   {
-    "id": CS002,
+    "id": "CS002",
     "name": "李明 (选手B)",
     "resources": {
-      "audio": "奇异恩典.mp3",
-      "scoreImage": "scores/奇异恩典.pdf"  
+      "audio": "audio/CS002_奇异恩典.mp3",
+      "scoreImage": "score/CS002_奇异恩典.pdf"
     }
   },
   {
-    "id": CS003,
+    "id": "CS003",
     "name": "王芳 (选手C)",
     "resources": {
-      "audio": "溜冰圆舞曲.mp3",
-      "scoreImage": "scores/溜冰圆舞曲.jpg"
-    }
-  },
-  {
-    "id": 1004,
-    "name": "赵强 (选手D)",
-    "resources": {
-      "audio": "audio_D.mp3",
-      "scoreImage": "scores/score_D.pdf"
+      "audio": "audio/CS003_溜冰圆舞曲.mp3",
+      "scoreImage": "score/CS003_溜冰圆舞曲.pdf"
     }
   }
-  // ❗ 请根据您的实际参赛者数量，继续添加对象，并确保使用逗号分隔前一个对象和当前对象。
 ]
