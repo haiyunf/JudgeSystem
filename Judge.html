@@ -13,9 +13,8 @@
         .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 48px; color: rgba(0,0,0,0.05); z-index: 9999; pointer-events: none; white-space: nowrap; }
         .card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; overflow: hidden; transition: all 0.3s; border: 2px solid transparent; }
         .card.completed { background: #f0f0f0; border-color: #d9d9d9; opacity: 0.8; }
-        
         .card-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .card-id-info { display: flex; flex-direction: column; gap: 3px; }
+        .card-id-info {display: flex; flex-direction: row; align-items: baseline; gap: 8px;} 
         .card-id { font-weight: bold; font-size: 1.1rem; color: #1890ff; }
         .card-name { font-size: 0.95rem; color: #555; font-weight: 500; }
         .card-instrument { display: none; } 
