@@ -150,7 +150,7 @@
         async function loadMetadata() {
             try {
                 // ❗ 路径修正：metadata.json 应该和 judge.html 在同一级目录
-                const response = await fetch('./metadata.json');
+                const response = await fetch('./data/metadata.json');
                 if (!response.ok) throw new Error(`Metadata load failed. Status: ${response.status}`);
                 const data = await response.json();
                 
