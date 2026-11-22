@@ -1,8 +1,5 @@
 {
-    "version": "V7.2.0",
-    "activity": {
-        "contestName": "初赛",
-        "instrument": "传统笙",
-        "group": "专业少年组"
-    }
+  "activityName": "初赛_传统笙_专业少年组",
+  "version": "V7.2.0",
+  "description": "本系统用于记录专业组（少年组）的评分数据，满分100分。"
 }
