@@ -145,7 +145,7 @@
         async function loadContestantData() {
             try {
                 // 1. 加载元数据 (metadata.json 假设在根目录)
-                const metaRes = await fetch('./metadata.json');
+                const metaRes = await fetch('./data/metadata.json');
                 if (!metaRes.ok) throw new Error(`Metadata load failed. Status: ${metaRes.status}`);
                 const metadata = await metaRes.json();
                 
