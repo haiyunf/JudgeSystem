@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>评委评分系统 - 25分制加分法 (本地缓存版) V7.2.0</title>
+    <style>
+        /* --- 样式部分 (原代码保留，确保界面一致性) --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f5f5f5; color: #333; padding: 10px; }
+        h2 { text-align: center; margin: 10px 0; font-size: 1.2rem; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 48px; color: rgba(0,0,0,0.05); z-index: 9999; pointer-events: none; white-space: nowrap; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; overflow: hidden; transition: all 0.3s; border: 2px solid transparent; }
+        .card.completed { background: #f0f0f0; border-color: #d9d9d9; opacity: 0.8; }
+        
+        .card-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .card-id-info { display: flex; flex-direction: column; gap: 3px; }
+        .card-id { font-weight: bold; font-size: 1.1rem; color: #1890ff; }
+        .card-name { font-size: 0.95rem; color: #555; font-weight: 500; }
+        .card-instrument { display: none; } 
+        .card-body { padding: 15px; }
+        audio { width: 100%; margin: 10px 0; }
+        .score-area { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .score-row { display: flex; align-items: center; gap: 10px; }
+        .score-row label { width: 80px; }
+        .score-row input[type="range"] { flex: 1; }
+        .score-row span { width: 40px; text-align: right; font-weight: bold; }
+
+        .total-score-row { 
+            display: flex !important;           
+            flex-direction: row !important;    
+            align-items: center !important;    
+            gap: 10px;                         
+            background-color: #e6f7ff; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            white-space: nowrap !important;   
+            overflow: visible;
+        }
+        .total-score-row label { font-weight: bold; color: #1890ff; flex-shrink: 0; }
+        .total-score-row span { font-size: 1.1rem; color: #d4380d; font-weight: bold; flex-shrink: 0; min-width: 60px; text-align: right; }
+        
+        .finish-btn {
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: #52c41a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            align-self: flex-end;
+            transition: background 0.3s;
+        }
+        .card.completed .finish-btn {
+            background: #8c8c8c;
+            color: #ccc;
+        }
+        .card.completed .finish-btn span {
+            font-size: 1rem;
+            margin-left: 5px;
+            color: #444;
+        }
+
+        .group-submit-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+
+        .submit-btn { display: block; width: 100%; padding: 15px; background: #d4380d; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        #timer { text-align: center; color: #ff4d4f; font-size: 1.2rem; font-weight: bold; margin: 10px 0; }
+        #activityInfoBox {
+            width: 100%; padding: 12px 15px; background-color: #fffbe6;
+            border: 1px solid #ffe58f; border-radius: 6px; text-align: center;
+            font-size: 1rem; font-weight: 600; color: #d4af37; margin-bottom: 15px;
+        }
+        .help-btn {
+            display: block; width: fit-content; margin: 0 auto 15px auto;
+            padding: 6px 15px; border: 1px dashed #1890ff; background: white;
+            color: #1890ff; border-radius: 20px; font-size: 0.85rem;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .hidden { display: none; }
+
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.95); padding: 10px; }
+        .modal-content { margin: 0 auto; display: block; width: 100%; max-height: 90vh; background-color: #000; border-radius: 8px; }
+        .card-header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .modal-close-btn { color: #aaa; float: right; font-size: 30px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; z-index: 10001; }
+    </style>
+</head>
+<body >
+    <div class="watermark" id="watermark">评委测试版</div>
+    
+    <div id="scoreModal" class="modal">
+        <span class="modal-close-btn" onclick="closeScoreModal()">&times;</span>
+        <div id="modalContentWrapper" class="modal-content"></div>
+    </div>
+
+    <div class="container" id="app">
+        <h2 id="mainTitle">评委评分系统 V7.2.0</h2>
+        
+        <p id="algorithmDesc" style="text-align: center; margin-bottom: 5px; color: #555; font-size: 0.95rem;">每项指标满分 25 分，四项总和即为最终总分 (满分 100 分)。</p>
+        <p style="text-align: center; margin-bottom: 15px; color: #d4380d; font-weight: bold; font-size: 0.9rem;">晋级分数线：专业组80分(含)、业余组70分(含)以上</p>
+        
+        <div id="activityInfoBox">正在加载本次评分信息...</div>
+
+        <button class="help-btn" onclick="showHelp()">💡 点击查看使用说明</button>
+
+        <div id="timer"></div>
+        <div id="group-container"></div>
+        <button class="submit-btn hidden" id="submitBtn" onclick="submitScore()">提交所有评分 (最终确认)</button>
+    </div>
+
+    <script>
+        // ========================================================
+        // === 🚀 V7.2.0 核心：JSON数据驱动 + 路径适配 ===
+        // ========================================================
+        const CONFIG = {
+            mode: 'http', 
+            // ❗❗ 关键适配：所有资源和数据都位于 data/ 文件夹下 ❗❗
+            baseResourceUrl: './data/', 
+            
+            contestantsData: [], 
+            completedStatus: {}, 
+            groupSize: 4 // 假设每组包含4位选手，请根据实际情况设置
+        };
+        const LOCAL_STORAGE_KEY = 'judgeScoresData_V720'; 
+
+        window.onload = function() {
+            document.getElementById('watermark').innerText = '评委测试版 V7.2.0';
+            loadContestantData();
+        };
+
+        // --- 数据加载函数 (核心) ---
+        async function loadContestantData() {
+            try {
+                // 1. 加载元数据 (metadata.json 假设在根目录)
+                const metaRes = await fetch('./metadata.json');
+                if (!metaRes.ok) throw new Error(`Metadata load failed. Status: ${metaRes.status}`);
+                const metadata = await metaRes.json();
+                
+                // 2. 更新配置
+                CONFIG.currentActivity = metadata.activity;
+                document.getElementById('mainTitle').innerText = `评委评分系统 ${metadata.version}`;
+
+                // 3. 加载选手数据 (路径已适配到 data/ 文件夹)
+                const dataRes = await fetch('./data/contestants.json');
+                if (!dataRes.ok) throw new Error(`Contestant data load failed. Status: ${dataRes.status}`);
+                CONFIG.contestantsData = await dataRes.json();
+                
+                // 初始化状态
+                CONFIG.contestantsData.forEach(c => CONFIG.completedStatus[c.id] = false);
+                
+                // 4. 渲染界面
+                renderGroups();
+                
+                // 5. 恢复本地缓存
+                loadCachedData();
+
+            } catch (error) {
+                console.error("数据加载失败:", error);
+                document.getElementById('activityInfoBox').innerHTML = 
+                    `<strong style="color: red;">❌ 致命错误：无法加载配置文件或选手数据 (${error.message})。请检查文件结构和文件内容！</strong>`;
+                document.getElementById('group-container').innerHTML = '';
+            }
+        }
+
+        // --- UI 渲染函数 ---
+
+        function renderGroups() {
+            const container = document.getElementById('group-container');
+            container.innerHTML = ''; 
+            let html = '';
+            
+            let groupIndex = 0;
+            
+            CONFIG.contestantsData.forEach((item, i) => {
+                
+                // ❗ 资源路径构建：baseResourceUrl = './data/'，资源名是文件名，所以组合起来是正确的
+                const audioSrc = CONFIG.baseResourceUrl + item.resources.audio; 
+                const scoreResourcePath = CONFIG.baseResourceUrl + item.resources.scoreImage; 
+
+                const completedClass = CONFIG.completedStatus[item.id] ? 'completed' : '';
+
+                // 安全处理路径，防止JS解析问题
+                const safeImagePath = scoreResourcePath.replace(/'/g, "\\'"); 
+
+                const cardHtml = `
+                    <div class="card ${completedClass}" id="card-${i}">
+                        <div class="card-header">
+                            <div class="card-id-info">
+                                <span class="card-id">${item.id}</span>
+                                <span class="card-name">${item.name}</span>
+                            </div>
+                            <div>
+                                <button class="view-image-btn" onclick="openScoreModal('${item.id}', '${safeImagePath}')" style="padding: 5px 10px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">▶ 听音看谱</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <audio id="audio-${i}" controls preload="none">
+                                <source src="${audioSrc}" type="audio/mpeg">
+                                您的浏览器不支持音频播放。
+                            </audio>
+                            <div class="score-area" id="score-area-${i}">
+                                ${generateScoreInputs(i)}
+                            </div>
+                            <div class="total-score-row" id="total-score-row-${i}">
+                                <label>总分 (满分100):</label>
+                                <span id="totalScoreVal${i}">50.0</span>
+                            </div>
+                            <button class="finish-btn" id="finish-btn-${i}" onclick="confirmScore(${i})">完成评分</button>
+                        </div>
+                    </div>
+                `;
+                
+                // 依据 CONFIG.groupSize 进行分组渲染
+                if ((i + 1) % CONFIG.groupSize === 0 || i === CONFIG.contestantsData.length - 1) {
+                    html += `<div id="group-${groupIndex}">${cardHtml}</div>`;
+                    if ((i + 1) !== CONFIG.contestantsData.length) {
+                        html += `<button class="group-submit-btn" onclick="submitGroup(${groupIndex})">确认本组并继续 (第 ${groupIndex + 1} 组)</button>`;
+                    }
+                    groupIndex++;
+                } else {
+                    html += cardHtml;
+                }
+            });
+            
+            container.innerHTML = html;
+            updateAllCardStates(); 
+            checkFinalSubmitButtonStatus();
+        }
+
+        function generateScoreInputs(index) {
+            let html = `<div class="score-row"><label>节奏:</label><input type="range" id="score1${index}" min="1" max="25" step="0.5" value="12.5" oninput="updateScore(${index}, 1, this.value)"> <span id="scoreVal1${index}">12.5</span></div>`;
+            html += `<div class="score-row"><label>风格:</label><input type="range" id="score2${index}" min="1" max="25" step="0.5" value="12.5" oninput="updateScore(${index}, 2, this.value)"> <span id="scoreVal2${index}">12.5</span></div>`;
+            html += `<div class="score-row"><label>技巧:</label><input type="range" id="score3${index}" min="1" max="25" step="0.5" value="12.5" oninput="updateScore(${index}, 3, this.value)"> <span id="scoreVal3${index}">12.5</span></div>`;
+            html += `<div class="score-row"><label>表现:</label><input type="range" id="score4${index}" min="1" max="25" step="0.5" value="12.5" oninput="updateScore(${index}, 4, this.value)"> <span id="scoreVal4${index}">12.5</span></div>`;
+            return html;
+        }
+
+        // --- 评分与状态管理 ---
+        function updateScore(index, metric, value) {
+            const scoreValue = parseFloat(value);
+            const spanId = `scoreVal${metric}${index}`;
+            const spanEl = document.getElementById(spanId);
+            if (spanEl) {
+                spanEl.innerText = scoreValue.toFixed(1);
+            }
+            calculateAndUpdateTotalScore(index);
+        }
+
+        function calculateAndUpdateTotalScore(index) {
+            let total = 0;
+            for (let i = 1; i <= 4; i++) {
+                const scoreElement = document.getElementById(`score${i}${index}`);
+                if (scoreElement) {
+                    total += parseFloat(scoreElement.value);
+                }
+            }
+            const totalScore = total.toFixed(1);
+            const totalScoreSpan = document.getElementById(`totalScoreVal${index}`);
+            if (totalScoreSpan) {
+                totalScoreSpan.innerText = totalScore;
+            }
+        }
+
+        function openScoreModal(id, resourcePath) {
+            const modal = document.getElementById("scoreModal");
+            const modalContentWrapper = document.getElementById("modalContentWrapper");
+            modalContentWrapper.innerHTML = ''; 
+
+            const extension = resourcePath.split('.').pop().toLowerCase();
+            
+            if (extension === 'pdf') {
+                // ✅ PDF 预览逻辑：利用浏览器原生PDF阅读器
+                window.open(resourcePath, '_blank');
+                alert("正在跳转至PDF阅读器打开乐谱。请检查新标签页。");
+                modal.style.display = "none"; 
+            } else if (extension === 'jpg' || extension === 'jpeg') {
+                // ✅ 图片显示逻辑
+                const img = document.createElement('img');
+                img.src = resourcePath;
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                modalContentWrapper.appendChild(img);
+                modal.style.display = "block";
+            } else {
+                 modalContentWrapper.innerHTML = `<p style="color: red;">⚠️ 文件类型不支持 (${extension})。请检查文件后缀名。</p>`;
+                 modal.style.display = "block";
+            }
+        }
+
+        function confirmScore(index) {
+            const contestantId = CONFIG.contestantsData[index].id;
+            const cardEl = document.getElementById(`card-${index}`);
+            
+            if (CONFIG.completedStatus[contestantId]) {
+                alert("该选手评分已确认，请勿重复点击。");
+                return;
+            }
+            
+            CONFIG.completedStatus[contestantId] = true;
+            
+            cardEl.classList.add('completed');
+            document.getElementById(`finish-btn-${index}`).innerHTML = '<span style="color:white;">✔ 已完成</span>';
+            
+            disableCardControls(index); 
+            
+            saveAllScoresLocally();
+            updateAllCardStates();
+        }
+
+        function disableCardControls(index) {
+            const cardEl = document.getElementById(`card-${index}`);
+            const controls = cardEl.querySelectorAll('input[type="range"]');
+            const finishBtn = document.getElementById(`finish-btn-${index}`);
+            
+            controls.forEach(control => control.disabled = true);
+            finishBtn.disabled = true;
+        }
+
+        function submitGroup(groupIndex) {
+            let groupStart = groupIndex * CONFIG.groupSize;
+            let groupEnd = Math.min((groupIndex + 1) * CONFIG.groupSize, CONFIG.contestantsData.length);
+
+            let groupIsComplete = true;
+            for (let i = groupStart; i < groupEnd; i++) {
+                if (!CONFIG.completedStatus[CONFIG.contestantsData[i].id]) {
+                    groupIsComplete = false;
+                    break;
+                }
+            }
+
+            if (groupIsComplete) {
+                updateAllCardStates(); 
+                checkFinalSubmitButtonStatus();
+                alert(`✅ 第 ${groupIndex + 1} 组 (${groupStart+1}-${groupEnd}) 所有选手评分已确认！请继续下一组或点击最终提交。`);
+            } else {
+                alert("⚠️ 警告：本组还有未完成的评分！请先确认所有选手（点击“完成评分”）后再提交本组。");
+            }
+        }
+
+        function submitScore() {
+            if (!checkFinalSubmitButtonStatus()) {
+                alert("❌ 错误：所有分组均未被确认！请先确认每一组的评分后才能提交最终结果。");
+                return;
+            }
+            
+            const data = { judgeName: '评委测试版', timestamp: new Date().toISOString(), scores: [] };
+            CONFIG.contestantsData.forEach((item, index) => {
+                let rawScores = [];
+                // 无论是否完成，我们都读取当前的数值进行提交
+                for (let i = 1; i <= 4; i++) {
+                    const scoreElement = document.getElementById(`score${i}${index}`);
+                    rawScores.push(scoreElement ? parseFloat(scoreElement.value).toFixed(1) : '0.0');
+                }
+                
+                const sum25 = rawScores.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+                
+                data.scores.push({
+                    id: item.id,
+                    name: item.name, 
+                    rawScores: rawScores,
+                    totalScore: sum25.toFixed(1),
+                    isCompleted: CONFIG.completedStatus[item.id]
+                });
+            });
+            
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+                alert("🎉🎉🎉 恭喜！所有评分数据已成功提交并保存到本地存储。请截图或复制数据作为最终存档！");
+            } catch (e) {
+                alert("❌ 存储失败，请手动记录分数。");
+            }
+        }
+
+        // --- 辅助函数 ---
+        function saveAllScoresLocally() {
+            // ... (与原版相同，用于实时保存进度)
+            const stateToSave = {
+                scores: CONFIG.contestantsData.map((item, index) => {
+                    let rawScores = [];
+                    for (let i = 1; i <= 4; i++) {
+                        const scoreElement = document.getElementById(`score${i}${index}`);
+                        rawScores.push(scoreElement ? parseFloat(scoreElement.value).toFixed(1) : '12.5');
+                    }
+                    return {
+                        id: item.id,
+                        name: item.name,
+                        rawScores: rawScores,
+                        totalScore: document.getElementById(`totalScoreVal${index}`).innerText,
+                        isCompleted: CONFIG.completedStatus[item.id]
+                    };
+                })
+            };
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToSave));
+        }
+        
+        function loadCachedData() {
+            // ... (与原版相同，用于恢复进度)
+            const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
+                
+                data.scores.forEach((scoreData, index) => {
+                    const item = CONFIG.contestantsData.find(c => c.id === scoreData.id);
+                    if (!item) return; 
+
+                    const cardEl = document.getElementById(`card-${index}`);
+                    if (!cardEl) return;
+
+                    for (let i = 1; i <= 4; i++) {
+                        const scoreElement = document.getElementById(`score${i}${index}`);
+                        if (scoreElement) {
+                            const recoveredValue = scoreData.rawScores[i-1] ? parseFloat(scoreData.rawScores[i-1]) : 12.5;
+                            scoreElement.value = recoveredValue;
+                            document.getElementById(`scoreVal${i}${index}`).innerText = recoveredValue.toFixed(1);
+                        }
+                    }
+                    document.getElementById(`totalScoreVal${index}`).innerText = scoreData.totalScore || '50.0';
+                    
+                    if (scoreData.isCompleted) {
+                        CONFIG.completedStatus[item.id] = true;
+                        cardEl.classList.add('completed');
+                        document.getElementById(`finish-btn-${index}`).innerHTML = '<span style="color:white;">✔ 已完成</span>';
+                    }
+                });
+                updateAllCardStates();
+                checkFinalSubmitButtonStatus();
+            }
+        }
+        
+        function updateAllCardStates() {
+            CONFIG.contestantsData.forEach((item, index) => {
+                const cardEl = document.getElementById(`card-${index}`);
+                const finishBtn = document.getElementById(`finish-btn-${index}`);
+                const controls = cardEl.querySelectorAll('input[type="range"]');
+
+                if(CONFIG.completedStatus[item.id]) {
+                    cardEl.classList.add('completed');
+                    finishBtn.innerHTML = '<span style="color:white;">✔ 已完成</span>';
+                    disableCardControls(index); 
+                } else {
+                    cardEl.classList.remove('completed');
+                    finishBtn.innerHTML = '完成评分';
+                    controls.forEach(control => control.disabled = false);
+                    finishBtn.disabled = false;
+                }
+            });
+        }
+        
+        function checkFinalSubmitButtonStatus() {
+            let allGroupsComplete = true;
+            const groups = Math.ceil(CONFIG.contestantsData.length / CONFIG.groupSize);
+
+            for (let g = 0; g < groups; g++) {
+                let groupStart = g * CONFIG.groupSize;
+                let groupEnd = Math.min((g + 1) * CONFIG.groupSize, CONFIG.contestantsData.length);
+                let groupIsComplete = true;
+
+                for (let i = groupStart; i < groupEnd; i++) {
+                    if (!CONFIG.completedStatus[CONFIG.contestantsData[i].id]) {
+                        groupIsComplete = false;
+                        break;
+                    }
+                }
+                
+                if (!groupIsComplete) {
+                    allGroupsComplete = false;
+                    break;
+                }
+            }
+            
+            const finalBtn = document.getElementById('submitBtn');
+            finalBtn.classList.toggle('hidden', !allGroupsComplete);
+            finalBtn.disabled = !allGroupsComplete;
+        }
+        
+        function showHelp() {
+            const helpMsg = "1. 评分流程\n- 点击音频播放键（▶），再点击“▶ 听音看谱”，即可同时播放音频和显示乐谱。\n- 先比较本组所有选手的表现，综合平衡评分，确保评分公平、客观。\n- 确认每位选手的分数无误后，逐一点击其“完成评分”按钮，锁定评分。\n- 全组所有选手评分锁定后，才能点击底部的“确认本组并继续”。\n\n2. 最终提交\n- 所有分组确认完成后，“提交所有评分”按钮将自动激活。\n- 点击该按钮，完成全部评分的最终提交和保存。\n\n3. 评分保存与恢复\n- 所有评分数据都会自动保存在当前设备的浏览器中。\n- 即使关闭浏览器或断开网络，下次打开本页面时，也会自动恢复上次的评分进度。";
+            alert(helpMsg);
+        }
+    </script>
+</body>
+</html>
