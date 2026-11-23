@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <!-- 关键：设置 viewport 确保移动端兼容性 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>评委评分系统 - V7.2.0</title>
+    <title>评委评分系统 - V7.6.0</title>
     
     <style>
         /* ============================================================== */
@@ -80,7 +80,18 @@
             cursor: pointer;
         }
 
+        .group-submit-btn:disabled {
+            background: #8c8c8c;
+            color: #ffffff;
+            cursor: not-allowed;
+        }
+
         .submit-btn { display: block; width: 100%; padding: 15px; background: #d4380d; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .submit-btn:disabled {
+            background: #8c8c8c;
+            cursor: not-allowed;
+        }
+
         #timer { text-align: center; color: #ff4d4f; font-size: 1.2rem; font-weight: bold; margin: 10px 0; }
         #activityInfoBox {
             width: 100%; padding: 12px 15px; background-color: #fffbe6;
@@ -102,7 +113,7 @@
 </head>
 <body>
     <!-- ⚠️ 注意：在GitHub Pages上，watermark 不会像本地那样完美居中，但我们保留它。 -->
-    <div class="watermark" id="watermark">评委测试版 V7.2.0</div>
+    <div class="watermark" id="watermark">评委测试版 V7.6.0</div>
     
     <!-- 评分弹窗 -->
     <div id="scoreModal" class="modal">
@@ -111,7 +122,7 @@
     </div>
 
     <div class="container" id="app">
-        <h2 id="mainTitle">评委评分系统 V7.2.0</h2>
+        <h2 id="mainTitle">评委评分系统 V7.6.0</h2>
         <p id="algorithmDesc" style="text-align: center; margin-bottom: 5px; color: #555; font-size: 0.95rem;">每项指标满分25分，四项相加即为满分100分</p>
         <p style="text-align: center; margin-bottom: 15px; color: #d4380d; font-weight: bold; font-size: 0.9rem;">晋级分数线：专业组80分(含)、业余组70分(含)以上</p>
         
@@ -127,7 +138,7 @@
 
     <script>
         // ========================================================
-        // === 🚀 V7.2.0 核心：路径适配 + 部署优化 ===
+        // === 🚀 V7.6.0 核心：每10人自动分组 + 每组独立确认 ===
         // ========================================================
         const CONFIG = {
             mode: 'http', 
@@ -136,9 +147,10 @@
             
             contestantsData: [], 
             completedStatus: {}, 
-            groupSize: 4 // 假设每组包含4位选手
+            confirmedGroups: {},
+            groupSize: 10 // 每满10位选手自动分为一组；最后不足10人也单独成组
         };
-        const LOCAL_STORAGE_KEY = 'judgeScoresData_V720'; 
+        const LOCAL_STORAGE_KEY = 'judgeScoresData_V760'; 
 
         window.onload = function() {
             // 启动所有流程
@@ -206,54 +218,61 @@
 
             let html = '';
             let groupIndex = 0;
-            
-            CONFIG.contestantsData.forEach((item, i) => {
-                
-                // ❗ 资源路径构建：baseResourceUrl = './data/'，资源名是文件名
-                const audioSrc = CONFIG.baseResourceUrl + item.resources.audio; 
-                const scoreResourcePath = CONFIG.baseResourceUrl + item.resources.scoreImage; 
 
-                const completedClass = CONFIG.completedStatus[item.id] ? 'completed' : '';
+            for (let groupStart = 0; groupStart < CONFIG.contestantsData.length; groupStart += CONFIG.groupSize) {
+                const groupEnd = Math.min(groupStart + CONFIG.groupSize, CONFIG.contestantsData.length);
 
-                const cardHtml = `
-                    <div class="card ${completedClass}" id="card-${i}">
-                        <div class="card-header">
-                            <div class="card-id-info">
-                                <span class="card-id">${item.id}</span>
-                                <span class="card-name">${item.name}</span>
+                html += `<div id="group-${groupIndex}">`;
+
+                for (let i = groupStart; i < groupEnd; i++) {
+                    const item = CONFIG.contestantsData[i];
+
+                    // ❗ 资源路径构建：baseResourceUrl = './data/'，资源名是文件名
+                    const audioSrc = CONFIG.baseResourceUrl + item.resources.audio; 
+                    const scoreResourcePath = CONFIG.baseResourceUrl + item.resources.scoreImage; 
+
+                    const completedClass = CONFIG.completedStatus[item.id] ? 'completed' : '';
+
+                    html += `
+                        <div class="card ${completedClass}" id="card-${i}">
+                            <div class="card-header">
+                                <div class="card-id-info">
+                                    <span class="card-id">${item.id}</span>
+                                    <span class="card-name">${item.name}</span>
+                                </div>
+                                <div>
+                                    <button class="view-image-btn" onclick="openScoreModal('${item.id}', '${scoreResourcePath.replace(/'/g, "\\'")}')" style="padding: 5px 10px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">▶ 听音看谱</button>
+                                </div>
                             </div>
-                            <div>
-                                <button class="view-image-btn" onclick="openScoreModal('${item.id}', '${scoreResourcePath.replace(/'/g, "\\'")}')" style="padding: 5px 10px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">▶ 听音看谱</button>
+                            <div class="card-body">
+                                <audio id="audio-${i}" controls preload="none">
+                                    <source src="${audioSrc}" type="audio/mpeg">
+                                    您的浏览器不支持音频播放。
+                                </audio>
+                                <div class="score-area" id="score-area-${i}">
+                                    ${generateScoreInputs(i)}
+                                </div>
+                                <div class="total-score-row" id="total-score-row-${i}">
+                                    <label>总分 (满分100):</label>
+                                    <span id="totalScoreVal${i}">50.0</span>
+                                </div >
+                                <button class="finish-btn" id="finish-btn-${i}" onclick="confirmScore(${i})">完成评分</button>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <audio id="audio-${i}" controls preload="none">
-                                <source src="${audioSrc}" type="audio/mpeg">
-                                您的浏览器不支持音频播放。
-                            </audio>
-                            <div class="score-area" id="score-area-${i}">
-                                ${generateScoreInputs(i)}
-                            </div>
-                            <div class="total-score-row" id="total-score-row-${i}">
-                                <label>总分 (满分100):</label>
-                                <span id="totalScoreVal${i}">50.0</span>
-                            </div >
-                            <button class="finish-btn" id="finish-btn-${i}" onclick="confirmScore(${i})">完成评分</button>
-                        </div>
-                    </div>
-                `;
-                
-                // 分组渲染逻辑 (保留)
-                if ((i + 1) % CONFIG.groupSize === 0 || i === CONFIG.contestantsData.length - 1) {
-                    html += `<div id="group-${groupIndex}">${cardHtml}</div>`;
-                    if ((i + 1) !== CONFIG.contestantsData.length) {
-                        html += `<button class="group-submit-btn" onclick="submitGroup(${groupIndex})">确认本组并继续 (第 ${groupIndex + 1} 组)</button>`;
-                    }
-                    groupIndex++;
-                } else {
-                    html += cardHtml;
+                    `;
                 }
-            });
+
+                html += `</div>`;
+
+                // 每一组末尾均显示确认按钮，包括人数不足10人的最后一组
+                html += `
+                    <button class="group-submit-btn" id="group-submit-btn-${groupIndex}" onclick="submitGroup(${groupIndex})">
+                        确认本组并继续 (第 ${groupIndex + 1} 组)
+                    </button>
+                `;
+
+                groupIndex++;
+            }
             
             container.innerHTML = html;
             updateAllCardStates(); 
@@ -319,6 +338,10 @@
             }
         }
 
+        function closeScoreModal() {
+            document.getElementById("scoreModal").style.display = "none";
+        }
+
         function confirmScore(index) {
             const contestantId = CONFIG.contestantsData[index].id;
             const cardEl = document.getElementById(`card-${index}`);
@@ -349,29 +372,55 @@
         }
 
         function submitGroup(groupIndex) {
-            let groupStart = groupIndex * CONFIG.groupSize;
-            let groupEnd = Math.min((groupIndex + 1) * CONFIG.groupSize, CONFIG.contestantsData.length);
+            const groupStart = groupIndex * CONFIG.groupSize;
+            const groupEnd = Math.min((groupIndex + 1) * CONFIG.groupSize, CONFIG.contestantsData.length);
 
-            let groupIsComplete = true;
+            const unfinishedContestants = [];
+
             for (let i = groupStart; i < groupEnd; i++) {
-                if (!CONFIG.completedStatus[CONFIG.contestantsData[i].id]) {
-                    groupIsComplete = false;
+                const contestant = CONFIG.contestantsData[i];
+
+                if (!CONFIG.completedStatus[contestant.id]) {
+                    unfinishedContestants.push(contestant.name || `参赛者 ${contestant.id}`);
+                }
+            }
+
+            if (unfinishedContestants.length > 0) {
+                alert(`⚠️ 警告：第 ${groupIndex + 1} 组还有 ${unfinishedContestants.length} 位选手未完成评分：\n\n${unfinishedContestants.join('、')}\n\n请先让本组所有选手点击“完成评分”，再确认本组。`);
+                return;
+            }
+
+            CONFIG.confirmedGroups[groupIndex] = true;
+
+            const groupButton = document.getElementById(`group-submit-btn-${groupIndex}`);
+            if (groupButton) {
+                groupButton.innerHTML = `✔ 第 ${groupIndex + 1} 组已确认`;
+                groupButton.disabled = true;
+            }
+
+            updateAllCardStates(); 
+            checkFinalSubmitButtonStatus();
+
+            alert(`✅ 第 ${groupIndex + 1} 组（参赛者 ${groupStart + 1}–${groupEnd}）评分已确认。请继续下一组，或在本组为最后一组且所有组均已确认后进行最终提交。`);
+        }
+
+        function submitScore() {
+            const totalGroups = Math.ceil(CONFIG.contestantsData.length / CONFIG.groupSize);
+            let allGroupsConfirmed = true;
+
+            for (let g = 0; g < totalGroups; g++) {
+                if (!CONFIG.confirmedGroups[g]) {
+                    allGroupsConfirmed = false;
                     break;
                 }
             }
 
-            if (groupIsComplete) {
-                updateAllCardStates(); 
-                checkFinalSubmitButtonStatus();
-                alert(`✅ 第 ${groupIndex + 1} 组 (${groupStart+1}-${groupEnd}) 所有选手评分已确认！请继续下一组或点击最终提交。`);
-            } else {
-                alert("⚠️ 警告：本组还有未完成的评分！请先确认所有选手（点击“完成评分”）后再提交本组。");
+            if (!allGroupsConfirmed) {
+                alert("❌ 错误：尚有分组未确认！请先确认每一组的评分后才能提交最终结果。");
+                return;
             }
-        }
 
-        function submitScore() {
-            if (!checkFinalSubmitButtonStatus()) {
-                alert("❌ 错误：所有分组均未被确认！请先确认每一组的评分后才能提交最终结果。");
+            if (!confirm('所有分组已完成确认，是否提交所有评分（最终确认）？')) {
                 return;
             }
             
@@ -405,6 +454,7 @@
         function saveAllScoresLocally() {
             // ... (此处代码与原版保持一致，用于实时保存进度)
             const stateToSave = {
+                confirmedGroups: CONFIG.confirmedGroups,
                 scores: CONFIG.contestantsData.map((item, index) => {
                     let rawScores = [];
                     for (let i = 1; i <= 4; i++) {
@@ -428,6 +478,10 @@
             const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cachedData) {
                 const data = JSON.parse(cachedData);
+
+                if (data.confirmedGroups) {
+                    CONFIG.confirmedGroups = data.confirmedGroups;
+                }
                 
                 data.scores.forEach((scoreData, index) => {
                     const item = CONFIG.contestantsData.find(c => c.id === scoreData.id);
@@ -452,6 +506,20 @@
                         document.getElementById(`finish-btn-${index}`).innerHTML = '<span style="color:white;">✔ 已完成</span>';
                     }
                 });
+
+                const totalGroups = Math.ceil(CONFIG.contestantsData.length / CONFIG.groupSize);
+
+                for (let g = 0; g < totalGroups; g++) {
+                    if (CONFIG.confirmedGroups[g]) {
+                        const groupButton = document.getElementById(`group-submit-btn-${g}`);
+
+                        if (groupButton) {
+                            groupButton.innerHTML = `✔ 第 ${g + 1} 组已确认`;
+                            groupButton.disabled = true;
+                        }
+                    }
+                }
+
                 updateAllCardStates();
                 checkFinalSubmitButtonStatus();
             }
@@ -477,34 +545,23 @@
         }
         
         function checkFinalSubmitButtonStatus() {
-            let allGroupsComplete = true;
-            const groups = Math.ceil(CONFIG.contestantsData.length / CONFIG.groupSize);
+            const totalGroups = Math.ceil(CONFIG.contestantsData.length / CONFIG.groupSize);
+            let allGroupsConfirmed = true;
 
-            for (let g = 0; g < groups; g++) {
-                let groupStart = g * CONFIG.groupSize;
-                let groupEnd = Math.min((g + 1) * CONFIG.groupSize, CONFIG.contestantsData.length);
-                let groupIsComplete = true;
-
-                for (let i = groupStart; i < groupEnd; i++) {
-                    if (!CONFIG.completedStatus[CONFIG.contestantsData[i].id]) {
-                        groupIsComplete = false;
-                        break;
-                    }
-                }
-                
-                if (!groupIsComplete) {
-                    allGroupsComplete = false;
+            for (let g = 0; g < totalGroups; g++) {
+                if (!CONFIG.confirmedGroups[g]) {
+                    allGroupsConfirmed = false;
                     break;
                 }
             }
             
             const finalBtn = document.getElementById('submitBtn');
-            finalBtn.classList.toggle('hidden', !allGroupsComplete);
-            finalBtn.disabled = !allGroupsComplete;
+            finalBtn.classList.toggle('hidden', !allGroupsConfirmed);
+            finalBtn.disabled = !allGroupsConfirmed;
         }
 
         function showHelp() {
-            const helpMsg = "1. 评分流程\n- 点击音频播放键（▶），再点击“▶ 听音看谱”，即可同时播放音频和显示乐谱。\n- 先比较本组所有选手的表现，综合平衡评分，确保评分公平、客观。\n- 确认每位选手的分数无误后，逐一点击其“完成评分”按钮，锁定评分。\n- 全组所有选手评分锁定后，才能点击底部的“确认本组并继续”。\n\n2. 最终提交\n- 所有分组确认完成后，“提交所有评分”按钮将自动激活。\n- 点击该按钮，完成全部评分的最终提交和保存。";
+            const helpMsg = "1. 评分流程\n- 点击音频播放键（▶），再点击“▶ 听音看谱”，即可同时播放音频和显示乐谱。\n- 先比较本组所有选手的表现，综合平衡评分，确保评分公平、客观。\n- 确认每位选手的分数无误后，逐一点击其“完成评分”按钮，锁定评分。\n- 全组所有选手评分锁定后，才能点击底部的“确认本组并继续”。\n\n2. 分组规则\n- 系统每满10位选手自动分为一组。\n- 最后剩余人数不足10人时，也会自动单独成为一组。\n- 例如：43位选手将分为第1至第4组各10人，第5组3人。\n- 例如：4位选手将作为第1组，共4人。\n\n3. 最终提交\n- 所有分组均确认完成后，页面底部将显示红色“提交所有评分（最终确认）”按钮。\n- 点击该按钮并再次确认后，完成全部评分的最终提交和保存。";
             alert(helpMsg);
         }
     </script>
