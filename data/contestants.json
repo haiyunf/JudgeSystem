@@ -158,5 +158,45 @@
       "audio": "audio/CS020_风之圆舞曲.mp3",
       "scoreImage": "score/CS020_风之圆舞曲.pdf"
     }
+  },
+  {
+    "id": "CS021",
+    "name": "波罗乃兹舞曲",
+    "resources": {
+      "audio": "audio/CS021_波罗乃兹舞曲.mp3",
+      "scoreImage": "score/CS021_波罗乃兹舞曲.pdf"
+    }
+  },
+  {
+    "id": "CS022",
+    "name": "蝴蝶",
+    "resources": {
+      "audio": "audio/CS022_蝴蝶.mp3",
+      "scoreImage": "score/CS022_蝴蝶.pdf"
+    }
+  },
+  {
+    "id": "CS023",
+    "name": "森林之歌",
+    "resources": {
+      "audio": "audio/CS023_森林之歌.mp3",
+      "scoreImage": "score/CS023_森林之歌.pdf"
+    }
+  },
+  {
+    "id": "CS024",
+    "name": "牧歌",
+    "resources": {
+      "audio": "audio/CS024_牧歌.mp3",
+      "scoreImage": "score/CS024_牧歌.pdf"
+    }
+  },
+  {
+    "id": "CS025",
+    "name": "四季之春",
+    "resources": {
+      "audio": "audio/CS025_四季之春.mp3",
+      "scoreImage": "score/CS025_四季之春.pdf"
+    }
   }
 ]
