@@ -22,5 +22,142 @@
       "audio": "audio/CS003_溜冰圆舞曲.mp3",
       "scoreImage": "score/CS003_溜冰圆舞曲.pdf"
     }
+  },
+   {
+    "id": "CS004",
+    "name": "月光奏鸣曲",
+    "resources": {
+      "audio": "audio/CS004_月光奏鸣曲.mp3",
+      "scoreImage": "score/CS004_月光奏鸣曲.pdf"
+    }
+  },
+  {
+    "id": "CS005",
+    "name": "致爱丽丝",
+    "resources": {
+      "audio": "audio/CS005_致爱丽丝.mp3",
+      "scoreImage": "score/CS005_致爱丽丝.pdf"
+    }
+  },
+  {
+    "id": "CS006",
+    "name": "蓝色多瑙河",
+    "resources": {
+      "audio": "audio/CS006_蓝色多瑙河.mp3",
+      "scoreImage": "score/CS006_蓝色多瑙河.pdf"
+    }
+  },
+  {
+    "id": "CS007",
+    "name": "春之祭",
+    "resources": {
+      "audio": "audio/CS007_春之祭.mp3",
+      "scoreImage": "score/CS007_春之祭.pdf"
+    }
+  },
+  {
+    "id": "CS008",
+    "name": "卡农",
+    "resources": {
+      "audio": "audio/CS008_卡农.mp3",
+      "scoreImage": "score/CS008_卡农.pdf"
+    }
+  },
+  {
+    "id": "CS009",
+    "name": "土耳其进行曲",
+    "resources": {
+      "audio": "audio/CS009_土耳其进行曲.mp3",
+      "scoreImage": "score/CS009_土耳其进行曲.pdf"
+    }
+  },
+  {
+    "id": "CS010",
+    "name": "欢乐颂",
+    "resources": {
+      "audio": "audio/CS010_欢乐颂.mp3",
+      "scoreImage": "score/CS010_欢乐颂.pdf"
+    }
+  },
+  {
+    "id": "CS011",
+    "name": "革命练习曲",
+    "resources": {
+      "audio": "audio/CS011_革命练习曲.mp3",
+      "scoreImage": "score/CS011_革命练习曲.pdf"
+    }
+  },
+  {
+    "id": "CS012",
+    "name": "野蜂飞舞",
+    "resources": {
+      "audio": "audio/CS012_野蜂飞舞.mp3",
+      "scoreImage": "score/CS012_野蜂飞舞.pdf"
+    }
+  },
+  {
+    "id": "CS013",
+    "name": "献给爱丽丝",
+    "resources": {
+      "audio": "audio/CS013_献给爱丽丝.mp3",
+      "scoreImage": "score/CS013_献给爱丽丝.pdf"
+    }
+  },
+  {
+    "id": "CS014",
+    "name": "天鹅",
+    "resources": {
+      "audio": "audio/CS014_天鹅.mp3",
+      "scoreImage": "score/CS014_天鹅.pdf"
+    }
+  },
+  {
+    "id": "CS015",
+    "name": "夏日",
+    "resources": {
+      "audio": "audio/CS015_夏日.mp3",
+      "scoreImage": "score/CS015_夏日.pdf"
+    }
+  },
+  {
+    "id": "CS016",
+    "name": "威尼斯的狂欢节",
+    "resources": {
+      "audio": "audio/CS016_威尼斯的狂欢节.mp3",
+      "scoreImage": "score/CS016_威尼斯的狂欢节.pdf"
+    }
+  },
+  {
+    "id": "CS017",
+    "name": "悲怆奏鸣曲",
+    "resources": {
+      "audio": "audio/CS017_悲怆奏鸣曲.mp3",
+      "scoreImage": "score/CS017_悲怆奏鸣曲.pdf"
+    }
+  },
+  {
+    "id": "CS018",
+    "name": "狩猎圆舞曲",
+    "resources": {
+      "audio": "audio/CS018_狩猎圆舞曲.mp3",
+      "scoreImage": "score/CS018_狩猎圆舞曲.pdf"
+    }
+  },
+  {
+    "id": "CS019",
+    "name": "夜曲 Op.9 No.2",
+    "resources": {
+      "audio": "audio/CS019_夜曲 Op.9 No.2.mp3",
+      "scoreImage": "score/CS019_夜曲 Op.9 No.2.pdf"
+    }
+  },
+  {
+    "id": "CS020",
+    "name": "风之圆舞曲",
+    "resources": {
+      "audio": "audio/CS020_风之圆舞曲.mp3",
+      "scoreImage": "score/CS020_风之圆舞曲.pdf"
+    }
   }
+]
 ]
