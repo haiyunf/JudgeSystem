@@ -43,6 +43,34 @@
         }
         .total-score-row label { font-weight: bold; color: #1890ff; flex-shrink: 0; }
         .total-score-row span { font-size: 1.1rem; color: #d4380d; font-weight: bold; flex-shrink: 0; min-width: 60px; text-align: right; }
+
+        .comment-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #fffbe6;
+            border-radius: 4px;
+        }
+        .comment-row label {
+            flex-shrink: 0;
+            width: 80px;
+            font-weight: bold;
+            color: #d48806;
+        }
+        .comment-row input {
+            flex: 1;
+            min-width: 0;
+            padding: 8px 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .comment-row input:disabled {
+            background: #e9e9e9;
+            color: #666;
+        }
         
         .finish-btn {
             margin-top: 10px;
@@ -255,7 +283,11 @@
                                 <div class="total-score-row" id="total-score-row-${i}">
                                     <label>总分 (满分100):</label>
                                     <span id="totalScoreVal${i}">50.0</span>
-                                </div >
+                                </div>
+                                <div class="comment-row">
+                                    <label for="comment-${i}">评语:</label>
+                                    <input type="text" id="comment-${i}" maxlength="50" placeholder="请输入评语（最多50字）" oninput="saveComment(${i})">
+                                </div>
                                 <button class="finish-btn" id="finish-btn-${i}" onclick="confirmScore(${i})">完成评分</button>
                             </div>
                         </div>
@@ -281,7 +313,6 @@
 
         // --- 评分与状态管理 (与原代码保持一致) ---
         function generateScoreInputs(index) {
-            // ... (此处代码不变)
             let html = `<div class="score-row"><label>节奏:</label><input type="range" id="score1${index}" min="1" max="25" step="0.1" value="12.5" oninput="updateScore(${index}, 1, this.value)"> <span id="scoreVal1${index}">12.5</span></div>`;
             html += `<div class="score-row"><label>风格:</label><input type="range" id="score2${index}" min="1" max="25" step="0.1" value="12.5" oninput="updateScore(${index}, 2, this.value)"> <span id="scoreVal2${index}">12.5</span></div>`;
             html += `<div class="score-row"><label>技巧:</label><input type="range" id="score3${index}" min="1" max="25" step="0.1" value="12.5" oninput="updateScore(${index}, 3, this.value)"> <span id="scoreVal3${index}">12.5</span></div>`;
@@ -293,9 +324,7 @@
             const scoreValue = parseFloat(value);
             const spanId = `scoreVal${metric}${index}`;
             const spanEl = document.getElementById(spanId);
-            if (spanEl) {
-                spanEl.innerText = scoreValue.toFixed(1);
-            }
+            if (spanEl) spanEl.innerText = scoreValue.toFixed(1);
             calculateAndUpdateTotalScore(index);
         }
 
@@ -303,14 +332,16 @@
             let total = 0;
             for (let i = 1; i <= 4; i++) {
                 const scoreElement = document.getElementById(`score${i}${index}`);
-                if (scoreElement) {
-                    total += parseFloat(scoreElement.value);
-                }
+                if (scoreElement) total += parseFloat(scoreElement.value);
             }
             const totalScore = total.toFixed(1);
             const totalScoreSpan = document.getElementById(`totalScoreVal${index}`);
-            if (totalScoreSpan) {
-                totalScoreSpan.innerText = totalScore;
+            if (totalScoreSpan) totalScoreSpan.innerText = totalScore;
+        }
+
+        function saveComment(index) {
+            if (!CONFIG.completedStatus[CONFIG.contestantsData[index].id]) {
+                saveAllScoresLocally();
             }
         }
 
@@ -352,12 +383,10 @@
             }
             
             CONFIG.completedStatus[contestantId] = true;
-            
             cardEl.classList.add('completed');
             document.getElementById(`finish-btn-${index}`).innerHTML = '<span style="color:white;">✔ 已完成</span>';
             
             disableCardControls(index); 
-            
             saveAllScoresLocally();
             updateAllCardStates();
         }
@@ -365,9 +394,11 @@
         function disableCardControls(index) {
             const cardEl = document.getElementById(`card-${index}`);
             const controls = cardEl.querySelectorAll('input[type="range"]');
+            const commentInput = document.getElementById(`comment-${index}`);
             const finishBtn = document.getElementById(`finish-btn-${index}`);
             
             controls.forEach(control => control.disabled = true);
+            if (commentInput) commentInput.disabled = true;
             finishBtn.disabled = true;
         }
 
@@ -379,14 +410,13 @@
 
             for (let i = groupStart; i < groupEnd; i++) {
                 const contestant = CONFIG.contestantsData[i];
-
                 if (!CONFIG.completedStatus[contestant.id]) {
                     unfinishedContestants.push(contestant.name || `参赛者 ${contestant.id}`);
                 }
             }
 
             if (unfinishedContestants.length > 0) {
-                alert(`⚠️ 警告：第 ${groupIndex + 1} 组还有 ${unfinishedContestants.length} 位选手未完成评分：\n\n${unfinishedContestants.join('、')}\n\n请先让本组所有选手完成并确认评分。`);
+                alert(`⚠️ 警告：第 ${groupIndex + 1} 组还有 ${unfinishedContestants.length} 位选手未完成评分：\n\n${unfinishedContestants.join('、')}\n\n请先让本组所有选手点击“完成评分”后再确认！`);
                 return;
             }
 
@@ -400,6 +430,7 @@
 
             updateAllCardStates(); 
             checkFinalSubmitButtonStatus();
+            saveAllScoresLocally();
 
             alert(`✅ 第 ${groupIndex + 1} 组（参赛者 ${groupStart + 1}–${groupEnd}）评分已确认。请继续下一组，或在本组为最后一组且所有组均已确认后进行最终提交。`);
         }
@@ -420,9 +451,7 @@
                 return;
             }
 
-            if (!confirm('所有分组已完成确认，是否提交所有评分（最终确认）？')) {
-                return;
-            }
+            if (!confirm('所有分组已完成确认，是否提交所有评分（最终确认）？')) return;
             
             const data = { judgeName: '评委测试版', timestamp: new Date().toISOString(), scores: [] };
             CONFIG.contestantsData.forEach((item, index) => {
@@ -432,12 +461,14 @@
                     rawScores.push(scoreElement ? parseFloat(scoreElement.value).toFixed(1) : '0.0');
                 }
                 const sum25 = rawScores.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+                const commentElement = document.getElementById(`comment-${index}`);
                 
                 data.scores.push({
                     id: item.id,
-                    name: item.name, 
+                    name: item.name,
                     rawScores: rawScores,
                     totalScore: sum25.toFixed(1),
+                    comment: commentElement ? commentElement.value.slice(0, 50) : '',
                     isCompleted: CONFIG.completedStatus[item.id]
                 });
             });
@@ -452,7 +483,6 @@
 
         // --- 辅助函数 ---
         function saveAllScoresLocally() {
-            // ... (此处代码与原版保持一致，用于实时保存进度)
             const stateToSave = {
                 confirmedGroups: CONFIG.confirmedGroups,
                 scores: CONFIG.contestantsData.map((item, index) => {
@@ -461,11 +491,13 @@
                         const scoreElement = document.getElementById(`score${i}${index}`);
                         rawScores.push(scoreElement ? parseFloat(scoreElement.value).toFixed(1) : '12.5');
                     }
+                    const commentElement = document.getElementById(`comment-${index}`);
                     return {
                         id: item.id,
                         name: item.name,
                         rawScores: rawScores,
                         totalScore: document.getElementById(`totalScoreVal${index}`).innerText,
+                        comment: commentElement ? commentElement.value.slice(0, 50) : '',
                         isCompleted: CONFIG.completedStatus[item.id]
                     };
                 })
@@ -474,14 +506,11 @@
         }
         
         function loadCachedData() {
-            // ... (此处代码与原版保持一致，用于恢复进度)
             const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cachedData) {
                 const data = JSON.parse(cachedData);
 
-                if (data.confirmedGroups) {
-                    CONFIG.confirmedGroups = data.confirmedGroups;
-                }
+                if (data.confirmedGroups) CONFIG.confirmedGroups = data.confirmedGroups;
                 
                 data.scores.forEach((scoreData, index) => {
                     const item = CONFIG.contestantsData.find(c => c.id === scoreData.id);
@@ -499,6 +528,9 @@
                         }
                     }
                     document.getElementById(`totalScoreVal${index}`).innerText = scoreData.totalScore || '50.0';
+
+                    const commentElement = document.getElementById(`comment-${index}`);
+                    if (commentElement) commentElement.value = (scoreData.comment || '').slice(0, 50);
                     
                     if (scoreData.isCompleted) {
                         CONFIG.completedStatus[item.id] = true;
@@ -512,7 +544,6 @@
                 for (let g = 0; g < totalGroups; g++) {
                     if (CONFIG.confirmedGroups[g]) {
                         const groupButton = document.getElementById(`group-submit-btn-${g}`);
-
                         if (groupButton) {
                             groupButton.innerHTML = `✔ 第 ${g + 1} 组已确认`;
                             groupButton.disabled = true;
@@ -539,6 +570,8 @@
                     cardEl.classList.remove('completed');
                     finishBtn.innerHTML = '完成评分';
                     controls.forEach(control => control.disabled = false);
+                    const commentInput = document.getElementById(`comment-${index}`);
+                    if (commentInput) commentInput.disabled = false;
                     finishBtn.disabled = false;
                 }
             });
@@ -561,7 +594,7 @@
         }
 
         function showHelp() {
-            const helpMsg = "1. 评分流程\n- 点击音频播放键（▶），再点击“▶ 听音看谱”，即可同时播放音频和显示乐谱。\n- 先比较本组所有选手的表现，综合平衡评分，确保评分公平、客观。\n- 确认每位选手的分数无误后，逐一点击绿色“完成评分”按钮，按钮变成灰色以锁定评分。\n- 全组所有选手评分锁定后，才能点击底部的“确认本组并继续”。\n\n2. 分组规则\n- 系统每满10位选手自动分为一组。\n- 最后剩余人数不足10人时，也会自动单独成为一组。\n- 例如：43位选手将分为第1至第4组各10人，第5组3人。\n- 例如：4位选手将作为第1组，共4人。\n\n3. 最终提交\n- 所有分组均确认完成后，页面底部将显示红色“提交所有评分（最终确认）”按钮。\n- 点击该按钮并再次确认后，完成全部评分的最终提交和保存。";
+            const helpMsg = "1. 评分流程\n- 点击音频播放键（▶），再点击“▶ 听音看谱”，即可同时播放音频和显示乐谱。\n- 先比较本组所有选手的表现，综合平衡评分，确保评分公平、客观。\n- 确认每位选手的分数和评语无误后，逐一点击绿色“完成评分”按钮，按钮变成灰色以锁定评分。\n- 全组所有选手评分锁定后，才能点击底部的“确认本组并继续”。\n\n2. 分组规则\n- 系统每满10位选手自动分为一组。\n- 最后剩余人数不足10人时，也会自动单独成为一组。\n\n3. 最终提交\n- 所有分组均确认完成后，页面底部将显示红色“提交所有评分（最终确认）”按钮。\n- 点击该按钮并再次确认后，完成全部评分的最终提交和保存。";
             alert(helpMsg);
         }
     </script>
